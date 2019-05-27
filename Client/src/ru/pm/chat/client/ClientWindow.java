@@ -101,6 +101,45 @@ public class ClientWindow extends JFrame implements ActionListener, TCPconnectio
         fieldInput.setText(null);
         connection.sendString(fieldNickname.getText() + ": " + msg);
     }
+  
+  // методы не имеет смысла синхронизтировать так как оин все из одного потока(одно соединение)
+    @Override
+    public  void onConnectionReady(TCPconnection topConnection){
+        printMsg("Connection is ready...");
 
+    }
 
+    @Override
+    public  void onReceiveString(TCPconnection topConnection, String value){
+        printMsg(value);
+
+    }
+
+    @Override
+    public  void onDisconnect(TCPconnection topConnection){
+        printMsg("Connection close");
+
+    }
+
+    @Override
+    public  void onException(TCPconnection topConnection,Exception e){
+        printMsg("Connection exception: " + e);
+
+    }
+
+    // метод который будет писать в текстовое поле и будем работать с ним из разных потоков
+    // то есть из потока окошка + из потока соединения поэтому мы его синхр
+    private synchronized void printMsg(String msg){
+        // так как метод может вызывваться из разных потоков в том числе из потока самого соединения
+        // статический публичный метод invok...которому можно передать Runnable в этом раннабле что-то написать
+        // и вот это что-то гарантировано в потоке окна будет выполнено
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                log.append(msg + "\n");
+                // для того чтобы текст всегда автоматичекси поднимался
+                log.setCaretPosition(log.getDocument().getLength());
+            }
+        });
+    }
 }
